@@ -6,8 +6,6 @@ module lumio::duration {
 
     /// When provided generic is not from lumio::duration module.
     const ERR_INVALID_DURATION_TYPE: u64 = 200;
-    /// Unreachable condition.
-    const ERR_UNREACHABLE: u64 = 201;
 
     // Constants.
 
@@ -26,34 +24,41 @@ module lumio::duration {
 
     struct TwoYears {}
 
-    public fun assert_lumio_duration<D>() {
+    // View functions.
+
+    #[view]
+    /// Returns duration in seconds for provided `D`.
+    public fun seconds<D>(): u64 {
+        // one month in seconds.
+        if (is_same<OneMonth, D>()) MONTH
+        // three months in seconds.
+        else if (is_same<ThreeMonths, D>()) MONTH * 3
+        // six months in seconds.
+        else if (is_same<SixMonths, D>()) MONTH * 6
+        // one year in seconds.
+        else if (is_same<OneYear, D>()) MONTH * 12
+        // two years in seconds.
+        else if (is_same<TwoYears, D>()) MONTH * 24
+        // abort on bad `D` generic.
+        else abort ERR_INVALID_DURATION_TYPE
+    }
+
+    #[view]
+    /// Returns structure name for selected `Duration` generic.
+    public fun selected<D>(): String {
+        assert_lumio_duration<D>();
+        utf8(type_info::type_of<D>().struct_name())
+    }
+
+    // Private functions.
+
+    /// Assert `D` generic are from correct (this) module.
+    fun assert_lumio_duration<D>() {
         let type = type_info::type_of<D>();
         assert!(
             type.account_address() == @lumio && type.module_name() == b"duration",
             ERR_INVALID_DURATION_TYPE
         );
-    }
-
-    #[view]
-    ///
-    public fun seconds<D>(): u64 {
-        if (is_same<OneMonth, D>()) MONTH
-        // one month in seconds.
-        else if (is_same<ThreeMonths, D>()) MONTH * 3
-        // three months in seconds.
-        else if (is_same<SixMonths, D>()) MONTH * 6
-        // six months in seconds.
-        else if (is_same<OneYear, D>()) MONTH * 12
-        // one year in seconds.
-        else if (is_same<TwoYears, D>()) MONTH * 24
-        // two years in seconds.
-        else abort ERR_UNREACHABLE
-    }
-
-    #[view]
-    ///
-    public fun selected<D>(): String {
-        utf8(type_info::type_of<D>().struct_name())
     }
 
     /// Compares two generics.

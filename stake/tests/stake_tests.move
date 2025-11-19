@@ -1,4 +1,137 @@
 #[test_only]
 module lumio::stake_tests {
+    use std::string::utf8;
+    use aptos_framework::account;
+    use aptos_framework::genesis;
+    use aptos_framework::primary_fungible_store;
+    use aptos_framework::timestamp;
+    use lumio::duration;
+
+    use lumio::common::new_account;
+    use lumio::fa::{create_admin_with_assets, meta, LSD, mint, amount};
+
+    use lumio::staking;
+    use lumio::duration::{SixMonths};
+
+    // Initialization tests
+
+    #[test]
+    fun test_stake_init() {
+        let lumio = new_account(@lumio);
+        let _ = create_admin_with_assets();
+
+        // Check module uninitialized by default.
+        assert!(!staking::is_initialized());
+
+        // Initialize staking.
+        staking::init(&lumio, meta<LSD>());
+
+        // Check initial state.
+        assert!(staking::is_initialized());
+        assert!(
+            staking::get_staking_asset_metadata() == meta<LSD>()
+        );
+        assert!(staking::get_total_locked() == 0);
+        assert!(staking::get_total_unlocked() == 0);
+
+        // Check assets holder.
+        let holder_addr =
+            account::create_resource_address(&@lumio, b"lumio-stake-assets-holder");
+        assert!(staking::get_holder_address() == holder_addr);
+        assert!(staking::get_holder_balance() == 0);
+    }
+
+    // Stake & Unstake tests
+
+    #[test]
+    fun test_e2e() {
+        let lumio = new_account(@lumio);
+        let _ = create_admin_with_assets();
+        let alice = new_account(@alice);
+
+        genesis::setup();
+        staking::init(&lumio, meta<LSD>());
+
+        // Mint some LSD for alice.
+        let amount_to_stake = amount<LSD>(28_500, 0);
+        let assets = mint<LSD>(amount_to_stake);
+        primary_fungible_store::deposit(@alice, assets);
+
+        // Check balances before.
+        assert!(
+            primary_fungible_store::balance(@alice, meta<LSD>()) == amount_to_stake
+        );
+        assert!(staking::get_holder_balance() == 0);
+
+        // Stake from alice.
+        staking::stake<SixMonths>(&alice, amount_to_stake, @carol);
+
+        // Check alice cannot unlock.
+        assert!(!staking::can_unlock(@alice, 0));
+
+        // Check module state.
+        assert!(staking::get_holder_balance() == amount_to_stake);
+        assert!(staking::get_total_locked() == amount_to_stake);
+        assert!(staking::get_total_unlocked() == 0);
+        assert!(staking::get_users_count() == 1);
+        assert!(staking::get_stakes_count() == 1);
+
+        // Check alice state.
+        assert!(
+            primary_fungible_store::balance(@alice, meta<LSD>()) == 0
+        );
+        assert!(staking::get_user_stakes_count(@alice) == 1);
+
+        // Check alice stake1 params.
+        let lock_time = timestamp::now_seconds();
+        assert!(staking::get_user_stakes_count(@alice) == 1);
+        let (
+            s0_owner, s0_ibo, s0_id, s0_amount, s0_duration, s0_lock_date, s0_unlock_date
+        ) = staking::get_user_stake(@alice, 0);
+        assert!(s0_owner == @alice);
+        assert!(s0_ibo == @carol);
+        assert!(s0_id == 0);
+        assert!(s0_amount == amount_to_stake);
+        assert!(s0_duration == utf8(b"SixMonths"));
+        assert!(s0_lock_date == lock_time);
+        assert!(
+            s0_unlock_date == lock_time + duration::seconds<SixMonths>()
+        );
+
+        // Wait six months.
+        timestamp::fast_forward_seconds(duration::seconds<SixMonths>());
+
+        // Unstake from alice.
+        assert!(staking::can_unlock(@alice, 0));
+        staking::unstake(&alice, 0);
+
+        // Check module state.
+        assert!(staking::get_holder_balance() == 0);
+        assert!(staking::get_total_locked() == amount_to_stake);
+        assert!(staking::get_total_unlocked() == amount_to_stake);
+        assert!(staking::get_users_count() == 1);
+        assert!(staking::get_stakes_count() == 1);
+
+        // Check alice state.
+        assert!(
+            primary_fungible_store::balance(@alice, meta<LSD>()) == amount_to_stake
+        );
+        assert!(staking::get_user_stakes_count(@alice) == 1);
+
+        // Check alice stake0 params after unstake.
+        assert!(staking::get_user_stakes_count(@alice) == 1);
+        let (
+            s0_owner, s0_ibo, s0_id, s0_amount, s0_duration, s0_lock_date, s0_unlock_date
+        ) = staking::get_user_stake(@alice, 0);
+        assert!(s0_owner == @alice);
+        assert!(s0_ibo == @carol);
+        assert!(s0_id == 0);
+        assert!(s0_amount == 0);
+        assert!(s0_duration == utf8(b"SixMonths"));
+        assert!(s0_lock_date == lock_time);
+        assert!(
+            s0_unlock_date == lock_time + duration::seconds<SixMonths>()
+        );
+    }
 }
 
