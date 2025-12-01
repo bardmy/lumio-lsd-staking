@@ -16,7 +16,7 @@ module lumio::stake_tests {
     // Initialization tests
 
     #[test]
-    fun test_stake_init() {
+    fun test_staking_init() {
         let lumio = new_account(@lumio);
         let _ = create_admin_with_assets();
 
@@ -43,7 +43,7 @@ module lumio::stake_tests {
 
     #[test]
     #[expected_failure(abort_code = staking::ERR_SIGNER_NOT_OWNER)]
-    fun test_stake_init_with_wrong_owner_should_fail() {
+    fun test_staking_init_with_wrong_owner_should_fail() {
         let alice = new_account(@alice);
         let _ = create_admin_with_assets();
 
@@ -54,7 +54,7 @@ module lumio::stake_tests {
     // Stake & Unstake tests
 
     #[test]
-    fun test_staking_stake_e2e() {
+    fun test_staking_stake_unstake_e2e() {
         let lumio = new_account(@lumio);
         let _ = create_admin_with_assets();
         let alice = new_account(@alice);
@@ -72,6 +72,9 @@ module lumio::stake_tests {
             primary_fungible_store::balance(@alice, meta<LSD>()) == amount_to_stake
         );
         assert!(staking::get_holder_balance() == 0);
+
+        // Capture timestamp before staking.
+        let initial_lock_date = timestamp::now_seconds();
 
         // Stake from alice.
         staking::stake<SixMonths>(&alice, amount_to_stake, @carol);
@@ -92,8 +95,7 @@ module lumio::stake_tests {
         );
         assert!(staking::get_user_stakes_count(@alice) == 1);
 
-        // Check alice stake1 params.
-        let lock_time = timestamp::now_seconds();
+        // Check alice stake0 params.
         assert!(staking::get_user_stakes_count(@alice) == 1);
         let (
             s0_owner, s0_ibo, s0_id, s0_amount, s0_duration, s0_lock_date, s0_unlock_date
@@ -103,9 +105,9 @@ module lumio::stake_tests {
         assert!(s0_id == 0);
         assert!(s0_amount == amount_to_stake);
         assert!(s0_duration == utf8(b"SixMonths"));
-        assert!(s0_lock_date == lock_time);
+        assert!(s0_lock_date == initial_lock_date);
         assert!(
-            s0_unlock_date == lock_time + duration::seconds<SixMonths>()
+            s0_unlock_date == s0_lock_date + duration::seconds<SixMonths>()
         );
 
         // Wait six months.
@@ -138,16 +140,16 @@ module lumio::stake_tests {
         assert!(s0_id == 0);
         assert!(s0_amount == 0);
         assert!(s0_duration == utf8(b"SixMonths"));
-        assert!(s0_lock_date == lock_time);
+        assert!(s0_lock_date == initial_lock_date);
         assert!(
-            s0_unlock_date == lock_time + duration::seconds<SixMonths>()
+            s0_unlock_date == s0_lock_date + duration::seconds<SixMonths>()
         );
     }
 
     // Unstake tests. Exact time
 
     #[test]
-    fun test_unstake_one_month_succeeds_at_exact_time() {
+    fun test_staking_unstake_one_month_succeeds_at_exact_time() {
         let lumio = new_account(@lumio);
         let _ = create_admin_with_assets();
         let alice = new_account(@alice);
@@ -173,7 +175,7 @@ module lumio::stake_tests {
     }
 
     #[test]
-    fun test_unstake_three_months_succeeds_at_exact_time() {
+    fun test_staking_unstake_three_months_succeeds_at_exact_time() {
         let lumio = new_account(@lumio);
         let _ = create_admin_with_assets();
         let alice = new_account(@alice);
@@ -199,7 +201,7 @@ module lumio::stake_tests {
     }
 
     #[test]
-    fun test_unstake_six_months_succeeds_at_exact_time() {
+    fun test_staking_unstake_six_months_succeeds_at_exact_time() {
         let lumio = new_account(@lumio);
         let _ = create_admin_with_assets();
         let alice = new_account(@alice);
@@ -225,7 +227,7 @@ module lumio::stake_tests {
     }
 
     #[test]
-    fun test_unstake_one_year_succeeds_at_exact_time() {
+    fun test_staking_unstake_one_year_succeeds_at_exact_time() {
         let lumio = new_account(@lumio);
         let _ = create_admin_with_assets();
         let alice = new_account(@alice);
@@ -251,7 +253,7 @@ module lumio::stake_tests {
     }
 
     #[test]
-    fun test_unstake_two_years_succeeds_at_exact_time() {
+    fun test_staking_unstake_two_years_succeeds_at_exact_time() {
         let lumio = new_account(@lumio);
         let _ = create_admin_with_assets();
         let alice = new_account(@alice);
@@ -280,7 +282,7 @@ module lumio::stake_tests {
 
     #[test]
     #[expected_failure(abort_code = staking::ERR_TOO_EARLY_TO_UNLOCK)]
-    fun test_unstake_one_month_fails_one_second_before() {
+    fun test_staking_unstake_one_month_fails_one_second_before() {
         let lumio = new_account(@lumio);
         let _ = create_admin_with_assets();
         let alice = new_account(@alice);
@@ -302,7 +304,7 @@ module lumio::stake_tests {
 
     #[test]
     #[expected_failure(abort_code = staking::ERR_TOO_EARLY_TO_UNLOCK)]
-    fun test_unstake_three_months_fails_one_second_before() {
+    fun test_staking_unstake_three_months_fails_one_second_before() {
         let lumio = new_account(@lumio);
         let _ = create_admin_with_assets();
         let alice = new_account(@alice);
@@ -324,7 +326,7 @@ module lumio::stake_tests {
 
     #[test]
     #[expected_failure(abort_code = staking::ERR_TOO_EARLY_TO_UNLOCK)]
-    fun test_unstake_six_months_fails_one_second_before() {
+    fun test_staking_unstake_six_months_fails_one_second_before() {
         let lumio = new_account(@lumio);
         let _ = create_admin_with_assets();
         let alice = new_account(@alice);
@@ -346,7 +348,7 @@ module lumio::stake_tests {
 
     #[test]
     #[expected_failure(abort_code = staking::ERR_TOO_EARLY_TO_UNLOCK)]
-    fun test_unstake_one_year_fails_one_second_before() {
+    fun test_staking_unstake_one_year_fails_one_second_before() {
         let lumio = new_account(@lumio);
         let _ = create_admin_with_assets();
         let alice = new_account(@alice);
@@ -368,7 +370,7 @@ module lumio::stake_tests {
 
     #[test]
     #[expected_failure(abort_code = staking::ERR_TOO_EARLY_TO_UNLOCK)]
-    fun test_unstake_two_years_fails_one_second_before() {
+    fun test_staking_unstake_two_years_fails_one_second_before() {
         let lumio = new_account(@lumio);
         let _ = create_admin_with_assets();
         let alice = new_account(@alice);
@@ -385,6 +387,77 @@ module lumio::stake_tests {
         let duration_seconds = duration::seconds<TwoYears>();
         timestamp::fast_forward_seconds(duration_seconds - 1);
 
+        staking::unstake(&alice, 0);
+    }
+
+    // Unstake error cases
+
+    #[test]
+    #[expected_failure(abort_code = staking::ERR_NOT_INITIALIZED)]
+    fun test_staking_unstake_fails_when_not_initialized() {
+        let alice = new_account(@alice);
+
+        genesis::setup();
+
+        staking::unstake(&alice, 0);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = staking::ERR_USER_HAS_NO_STAKES)]
+    fun test_staking_unstake_fails_when_user_has_no_stakes() {
+        let lumio = new_account(@lumio);
+        let _ = create_admin_with_assets();
+        let alice = new_account(@alice);
+
+        genesis::setup();
+        staking::init(&lumio, meta<LSD>());
+
+        staking::unstake(&alice, 0);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = staking::ERR_STAKE_DOESNT_EXIST)]
+    fun test_staking_unstake_fails_when_stake_doesnt_exist() {
+        let lumio = new_account(@lumio);
+        let _ = create_admin_with_assets();
+        let alice = new_account(@alice);
+
+        genesis::setup();
+        staking::init(&lumio, meta<LSD>());
+
+        let amount_to_stake = amount<LSD>(1000, 0);
+        let assets = mint<LSD>(amount_to_stake);
+        primary_fungible_store::deposit(@alice, assets);
+
+        staking::stake<OneMonth>(&alice, amount_to_stake, @alice);
+
+        // Try to unstake with non-existent stake id.
+        staking::unstake(&alice, 1);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = staking::ERR_STAKE_ALREADY_UNLOCKED)]
+    fun test_staking_unstake_fails_when_stake_already_unlocked() {
+        let lumio = new_account(@lumio);
+        let _ = create_admin_with_assets();
+        let alice = new_account(@alice);
+
+        genesis::setup();
+        staking::init(&lumio, meta<LSD>());
+
+        let amount_to_stake = amount<LSD>(1000, 0);
+        let assets = mint<LSD>(amount_to_stake);
+        primary_fungible_store::deposit(@alice, assets);
+
+        staking::stake<OneMonth>(&alice, amount_to_stake, @alice);
+
+        let duration_seconds = duration::seconds<OneMonth>();
+        timestamp::fast_forward_seconds(duration_seconds);
+
+        // First unstake should succeed.
+        staking::unstake(&alice, 0);
+
+        // Second unstake should fail.
         staking::unstake(&alice, 0);
     }
 }
