@@ -5,8 +5,8 @@ module lumio::stake_tests {
     use aptos_framework::genesis;
     use aptos_framework::primary_fungible_store;
     use aptos_framework::timestamp;
-    use lumio::duration;
 
+    use lumio::duration;
     use lumio::common::new_account;
     use lumio::fa::{create_admin_with_assets, meta, LSD, mint, amount};
 
@@ -41,10 +41,20 @@ module lumio::stake_tests {
         assert!(staking::get_holder_balance() == 0);
     }
 
+    #[test]
+    #[expected_failure(abort_code = staking::ERR_SIGNER_NOT_OWNER)]
+    fun test_stake_init_with_wrong_owner_should_fail() {
+        let alice = new_account(@alice);
+        let _ = create_admin_with_assets();
+
+        // Attempt to initialize staking with wrong owner.
+        staking::init(&alice, meta<LSD>());
+    }
+
     // Stake & Unstake tests
 
     #[test]
-    fun test_e2e() {
+    fun test_staking_stake_e2e() {
         let lumio = new_account(@lumio);
         let _ = create_admin_with_assets();
         let alice = new_account(@alice);

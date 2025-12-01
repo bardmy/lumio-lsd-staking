@@ -3,9 +3,9 @@ module lumio::staking {
     use std::hash::sha3_256;
     use std::signer;
     use std::string::String;
+
     use aptos_std::table_with_length;
     use aptos_std::table_with_length::TableWithLength;
-
     use aptos_framework::account;
     use aptos_framework::account::SignerCapability;
     use aptos_framework::event;
@@ -133,7 +133,7 @@ module lumio::staking {
                 let counter = state.users.borrow_mut(user_addr);
                 let current_id = *counter;
 
-                *counter = *counter + 1;
+                *counter += 1;
 
                 current_id
             };
@@ -160,7 +160,7 @@ module lumio::staking {
 
         // Save stake and increase total locked value.
         state.stakes.add(stake_index_addr, user_stake);
-        state.total_locked = state.total_locked + amount;
+        state.total_locked += amount;
 
         // Emit stake event.
         event::emit(
@@ -198,7 +198,7 @@ module lumio::staking {
 
         // Set stake amount to 0 and increase total unlocked value.
         user_stake.amount = 0;
-        state.total_unlocked = state.total_unlocked + locked_amount;
+        state.total_unlocked += locked_amount;
 
         // Transfer assets back to user.
         let holder_acc = &account::create_signer_with_capability(&state.assets_holder);

@@ -1,5 +1,6 @@
 module lumio::duration {
     use std::string::{String, utf8};
+
     use aptos_std::type_info;
 
     // Errors.
@@ -52,18 +53,23 @@ module lumio::duration {
 
     // Private functions.
 
-    /// Assert `D` generic are from correct (this) module.
+    /// Assert `D` generic is correct generic from this module.
     fun assert_lumio_duration<D>() {
-        let type = type_info::type_of<D>();
-        assert!(
-            type.account_address() == @lumio && type.module_name() == b"duration",
-            ERR_INVALID_DURATION_TYPE
-        );
+        let is_correct =
+            is_same<OneMonth, D>()
+                || is_same<ThreeMonths, D>()
+                || is_same<SixMonths, D>()
+                || is_same<OneYear, D>()
+                || is_same<TwoYears, D>();
+        assert!(is_correct, ERR_INVALID_DURATION_TYPE);
     }
 
     /// Compares two generics.
     inline fun is_same<T1, T2>(): bool {
         type_info::type_of<T1>() == type_info::type_of<T2>()
     }
+
+    #[test_only]
+    struct ThreeYears {}
 }
 
