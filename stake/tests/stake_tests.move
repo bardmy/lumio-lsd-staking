@@ -11,7 +11,7 @@ module lumio::stake_tests {
     use lumio::fa::{create_admin_with_assets, meta, LSD, mint, amount};
 
     use lumio::staking;
-    use lumio::duration::{SixMonths};
+    use lumio::duration::{OneMonth, ThreeMonths, SixMonths, OneYear, TwoYears};
 
     // Initialization tests
 
@@ -142,6 +142,250 @@ module lumio::stake_tests {
         assert!(
             s0_unlock_date == lock_time + duration::seconds<SixMonths>()
         );
+    }
+
+    // Unstake tests. Exact time
+
+    #[test]
+    fun test_unstake_one_month_succeeds_at_exact_time() {
+        let lumio = new_account(@lumio);
+        let _ = create_admin_with_assets();
+        let alice = new_account(@alice);
+
+        genesis::setup();
+        staking::init(&lumio, meta<LSD>());
+
+        let amount_to_stake = amount<LSD>(1000, 0);
+        let assets = mint<LSD>(amount_to_stake);
+        primary_fungible_store::deposit(@alice, assets);
+
+        staking::stake<OneMonth>(&alice, amount_to_stake, @alice);
+
+        let duration_seconds = duration::seconds<OneMonth>();
+        timestamp::fast_forward_seconds(duration_seconds);
+
+        assert!(staking::can_unlock(@alice, 0));
+        staking::unstake(&alice, 0);
+
+        assert!(
+            primary_fungible_store::balance(@alice, meta<LSD>()) == amount_to_stake
+        );
+    }
+
+    #[test]
+    fun test_unstake_three_months_succeeds_at_exact_time() {
+        let lumio = new_account(@lumio);
+        let _ = create_admin_with_assets();
+        let alice = new_account(@alice);
+
+        genesis::setup();
+        staking::init(&lumio, meta<LSD>());
+
+        let amount_to_stake = amount<LSD>(1000, 0);
+        let assets = mint<LSD>(amount_to_stake);
+        primary_fungible_store::deposit(@alice, assets);
+
+        staking::stake<ThreeMonths>(&alice, amount_to_stake, @alice);
+
+        let duration_seconds = duration::seconds<ThreeMonths>();
+        timestamp::fast_forward_seconds(duration_seconds);
+
+        assert!(staking::can_unlock(@alice, 0));
+        staking::unstake(&alice, 0);
+
+        assert!(
+            primary_fungible_store::balance(@alice, meta<LSD>()) == amount_to_stake
+        );
+    }
+
+    #[test]
+    fun test_unstake_six_months_succeeds_at_exact_time() {
+        let lumio = new_account(@lumio);
+        let _ = create_admin_with_assets();
+        let alice = new_account(@alice);
+
+        genesis::setup();
+        staking::init(&lumio, meta<LSD>());
+
+        let amount_to_stake = amount<LSD>(1000, 0);
+        let assets = mint<LSD>(amount_to_stake);
+        primary_fungible_store::deposit(@alice, assets);
+
+        staking::stake<SixMonths>(&alice, amount_to_stake, @alice);
+
+        let duration_seconds = duration::seconds<SixMonths>();
+        timestamp::fast_forward_seconds(duration_seconds);
+
+        assert!(staking::can_unlock(@alice, 0));
+        staking::unstake(&alice, 0);
+
+        assert!(
+            primary_fungible_store::balance(@alice, meta<LSD>()) == amount_to_stake
+        );
+    }
+
+    #[test]
+    fun test_unstake_one_year_succeeds_at_exact_time() {
+        let lumio = new_account(@lumio);
+        let _ = create_admin_with_assets();
+        let alice = new_account(@alice);
+
+        genesis::setup();
+        staking::init(&lumio, meta<LSD>());
+
+        let amount_to_stake = amount<LSD>(1000, 0);
+        let assets = mint<LSD>(amount_to_stake);
+        primary_fungible_store::deposit(@alice, assets);
+
+        staking::stake<OneYear>(&alice, amount_to_stake, @alice);
+
+        let duration_seconds = duration::seconds<OneYear>();
+        timestamp::fast_forward_seconds(duration_seconds);
+
+        assert!(staking::can_unlock(@alice, 0));
+        staking::unstake(&alice, 0);
+
+        assert!(
+            primary_fungible_store::balance(@alice, meta<LSD>()) == amount_to_stake
+        );
+    }
+
+    #[test]
+    fun test_unstake_two_years_succeeds_at_exact_time() {
+        let lumio = new_account(@lumio);
+        let _ = create_admin_with_assets();
+        let alice = new_account(@alice);
+
+        genesis::setup();
+        staking::init(&lumio, meta<LSD>());
+
+        let amount_to_stake = amount<LSD>(1000, 0);
+        let assets = mint<LSD>(amount_to_stake);
+        primary_fungible_store::deposit(@alice, assets);
+
+        staking::stake<TwoYears>(&alice, amount_to_stake, @alice);
+
+        let duration_seconds = duration::seconds<TwoYears>();
+        timestamp::fast_forward_seconds(duration_seconds);
+
+        assert!(staking::can_unlock(@alice, 0));
+        staking::unstake(&alice, 0);
+
+        assert!(
+            primary_fungible_store::balance(@alice, meta<LSD>()) == amount_to_stake
+        );
+    }
+
+    // Unstake tests. A second before unlock date (should fail)
+
+    #[test]
+    #[expected_failure(abort_code = staking::ERR_TOO_EARLY_TO_UNLOCK)]
+    fun test_unstake_one_month_fails_one_second_before() {
+        let lumio = new_account(@lumio);
+        let _ = create_admin_with_assets();
+        let alice = new_account(@alice);
+
+        genesis::setup();
+        staking::init(&lumio, meta<LSD>());
+
+        let amount_to_stake = amount<LSD>(1000, 0);
+        let assets = mint<LSD>(amount_to_stake);
+        primary_fungible_store::deposit(@alice, assets);
+
+        staking::stake<OneMonth>(&alice, amount_to_stake, @alice);
+
+        let duration_seconds = duration::seconds<OneMonth>();
+        timestamp::fast_forward_seconds(duration_seconds - 1);
+
+        staking::unstake(&alice, 0);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = staking::ERR_TOO_EARLY_TO_UNLOCK)]
+    fun test_unstake_three_months_fails_one_second_before() {
+        let lumio = new_account(@lumio);
+        let _ = create_admin_with_assets();
+        let alice = new_account(@alice);
+
+        genesis::setup();
+        staking::init(&lumio, meta<LSD>());
+
+        let amount_to_stake = amount<LSD>(1000, 0);
+        let assets = mint<LSD>(amount_to_stake);
+        primary_fungible_store::deposit(@alice, assets);
+
+        staking::stake<ThreeMonths>(&alice, amount_to_stake, @alice);
+
+        let duration_seconds = duration::seconds<ThreeMonths>();
+        timestamp::fast_forward_seconds(duration_seconds - 1);
+
+        staking::unstake(&alice, 0);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = staking::ERR_TOO_EARLY_TO_UNLOCK)]
+    fun test_unstake_six_months_fails_one_second_before() {
+        let lumio = new_account(@lumio);
+        let _ = create_admin_with_assets();
+        let alice = new_account(@alice);
+
+        genesis::setup();
+        staking::init(&lumio, meta<LSD>());
+
+        let amount_to_stake = amount<LSD>(1000, 0);
+        let assets = mint<LSD>(amount_to_stake);
+        primary_fungible_store::deposit(@alice, assets);
+
+        staking::stake<SixMonths>(&alice, amount_to_stake, @alice);
+
+        let duration_seconds = duration::seconds<SixMonths>();
+        timestamp::fast_forward_seconds(duration_seconds - 1);
+
+        staking::unstake(&alice, 0);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = staking::ERR_TOO_EARLY_TO_UNLOCK)]
+    fun test_unstake_one_year_fails_one_second_before() {
+        let lumio = new_account(@lumio);
+        let _ = create_admin_with_assets();
+        let alice = new_account(@alice);
+
+        genesis::setup();
+        staking::init(&lumio, meta<LSD>());
+
+        let amount_to_stake = amount<LSD>(1000, 0);
+        let assets = mint<LSD>(amount_to_stake);
+        primary_fungible_store::deposit(@alice, assets);
+
+        staking::stake<OneYear>(&alice, amount_to_stake, @alice);
+
+        let duration_seconds = duration::seconds<OneYear>();
+        timestamp::fast_forward_seconds(duration_seconds - 1);
+
+        staking::unstake(&alice, 0);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = staking::ERR_TOO_EARLY_TO_UNLOCK)]
+    fun test_unstake_two_years_fails_one_second_before() {
+        let lumio = new_account(@lumio);
+        let _ = create_admin_with_assets();
+        let alice = new_account(@alice);
+
+        genesis::setup();
+        staking::init(&lumio, meta<LSD>());
+
+        let amount_to_stake = amount<LSD>(1000, 0);
+        let assets = mint<LSD>(amount_to_stake);
+        primary_fungible_store::deposit(@alice, assets);
+
+        staking::stake<TwoYears>(&alice, amount_to_stake, @alice);
+
+        let duration_seconds = duration::seconds<TwoYears>();
+        timestamp::fast_forward_seconds(duration_seconds - 1);
+
+        staking::unstake(&alice, 0);
     }
 }
 
