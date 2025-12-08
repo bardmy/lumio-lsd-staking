@@ -1,0 +1,22 @@
+[package]
+name = "LumioRewards"
+version = "1.0.0"
+authors = []
+
+[addresses]
+lumio = "0701e1f2305deea4c4d9da701aadfcf705b000ca42a656bb8cddb3e89d359ab0"
+
+# test addresses
+fa_admin = "0x77"
+alice = "0x60"
+bob = "0x61"
+carol = "0x62"
+
+[dev-addresses]
+
+[dependencies.AptosFramework]
+git = "https://github.com/aptos-labs/aptos-framework.git"
+rev = "mainnet"
+subdir = "aptos-framework"
+
+[dev-dependencies]
